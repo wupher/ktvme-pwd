@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "KTVME Autofill Password Extension",
+  "version": "1.0.0",
+  "description": "Auto-fill credentials for ktvme company sites (personal use).",
+  "permissions": ["storage", "scripting", "activeTab", "contextMenus"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "action": {
+    "default_title": "Autofill Helper"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
