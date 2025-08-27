@@ -14,3 +14,13 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   // 把域名临时放到 session 里，options 页可读取并预填
   await chrome.storage.session.set({ lastDomain: domain });
 });
+
+// 接收 content/options 的请求，读取 session masterKey
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === 'getMasterKey') {
+    chrome.storage.session.get(['masterKey']).then(data => {
+      sendResponse({ masterKey: data.masterKey || null });
+    });
+    return true; // 异步响应
+  }
+});

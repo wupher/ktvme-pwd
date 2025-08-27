@@ -6,7 +6,7 @@ function findFields() {
   // Candidate username fields near the password
   // Try common selectors first
   let user =
-    document.querySelector('input[name="username"], input[name="email"], input[type="email"], input[type="text"][autocomplete="username"], input[autocomplete="email"]');
+    document.querySelector('input[name="username"], input[name="user"], input[name="email"], input[type="email"], input[type="text"][autocomplete="username"], input[autocomplete="email"]');
 
   // If not found, pick the closest text-like input before the password
   if (!user) {
@@ -45,8 +45,11 @@ async function decryptIfNeeded(masterKeyB64, cipherObj) {
   if (!record) return; // not managed site
 
   // Try to get session master key (only kept until browser closes)
-  const session = await chrome.storage.session.get(['masterKey']);
-  const masterKey = session.masterKey || null;
+  // const session = await chrome.storage.session.get(['masterKey']);
+  // const masterKey = session.masterKey || null;
+
+  //向 background 请求 masterKey
+  const { masterKey } = await chrome.runtime.sendMessage({ type: 'getMasterKey' });
 
   let username = record.username;
   let password = record.password;
