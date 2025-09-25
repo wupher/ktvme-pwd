@@ -6,16 +6,21 @@ function findUserPassFields() {
   let user =
     document.querySelector(
       [
+        // Prioritize Kibana's specific selector
+        'input[data-test-subj="user-name"]',
+        // Original selectors
         'input[name="username"]',
         'input[name="user"]',
         'input[name="email"]',
         'input[type="email"]',
         'input[type="text"][autocomplete="username"]',
-        'input[autocomplete="email"]'
+        'input[autocomplete="email"]',
+        'input[id="username-textfield"]',
       ].join(',')
     );
 
   if (!user) {
+    console.info("Not found by specific selectors, trying generic fallback.");
     const inputs = Array.from(
       document.querySelectorAll('input[type="text"], input[type="email"], input:not([type])')
     );
@@ -155,8 +160,12 @@ function findOtpSegmentFields() {
   if (!record) return;
 
   // ---------- Username / Password autofill ----------
-  const { user, pass } = findUserPassFields();
-  if (pass) {
+  const tryFillLogin = async () => {
+    const { user, pass } = findUserPassFields();
+    if (!pass) {
+      return false; // If no password field, can't do anything.
+    }
+
     let username = record.username;
     let password = record.password;
 
@@ -188,7 +197,28 @@ function findOtpSegmentFields() {
       const form = pass.form || user?.form || document.querySelector('form');
       if (form) setTimeout(() => (form.requestSubmit ? form.requestSubmit() : form.submit()), 300);
     }
+    
+    console.log("Successfully found and filled login fields.");
+    return true; // Signal success
+  };
+
+  // Attempt to fill login, if it fails, observe DOM for changes.
+  // This is the same pattern your OTP fill uses.
+  let loginFilled = await tryFillLogin();
+  if (!loginFilled) {
+    console.log("Login fields not found immediately. Observing DOM changes...");
+    const loginObserver = new MutationObserver(async () => {
+      if (await tryFillLogin()) {
+        loginObserver.disconnect();
+      }
+    });
+    loginObserver.observe(document.documentElement, { childList: true, subtree: true });
+    setTimeout(() => {
+        loginObserver.disconnect();
+        console.log("Stopped observing for login fields after 10 seconds.");
+    }, 10000);
   }
+
 
   // ---------- OTP (TOTP) autofill ----------
   if (record.otp) {
@@ -247,7 +277,7 @@ function findOtpSegmentFields() {
         if (await tryFillOtp()) obs.disconnect();
       });
       obs.observe(document.documentElement, { childList: true, subtree: true });
-      setTimeout(() => obs.disconnect(), 10_000);
+      setTimeout(() => obs.disconnect(), 10000);
     }
   }
 })();
